@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Bootstrap hosted CSS -->
+    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
+    <!-- Font Awesome Icon fonts + IE7 compatability -->
+    <link href="//netdna.bootstrapcdn.com/font-awesome/3.0.2/css/font-awesome.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <img id="imageToSend" src="http://lsdkiteboarding.com/sites/default/files/imagecache/homepageimage/homepageimage/gopro%20home.jpg" />
+
+        <a href="#" id="fbModalButton" role="button"><i class="icon-facebook" alt="" title="Share on Facebook" ></i></a>
+
+        <div id="fbModal" class="modal hide fade">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4>Share on Facebook</h4>
+                <div id="FB_details"></div>
+            </div>
+            <div class="modal-body">
+
+                <label> Select Page </label>
+                <select id="pageList"> </select>
+                <label> Insert message text </label>
+                <textarea id="message"></textarea>
+
+            </div>
+            <div class="modal-footer">
+                <a href="#" class="btn" data-dismiss="modal" aria-hidden="true">Close</a>
+                <a href="#" id="fbsend" data-dismiss="modal" aria-hidden="true" class="btn btn-primary">Send to Facebook</a>
+            </div>
+        </div>
+    </div>
+</body>
+<!-- Sourcing JQuery and Bootstrap from CDN's -->
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js" > </script>
+<!-- Bootstrap hosted Javascript -->
+<script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function() {
+    // initalise variables needed 
+    var access_token;
+    var page_id;
+    // Call the facebook API
+    // Using Jquery - https://developers.facebook.com/docs/javascript/howto/jquery/
+    $.ajaxSetup({ cache: true });
+    $.getScript('//connect.facebook.net/en_US/all/debug.js', function(){
+        FB.init({
+            // Your FB app ID
+            appId: 'xxxxxxxx',
+            /* Adding a Channel File greatly improves the performance of the JS SDK by addressing issues with cross-domain communication in certain browsers. The contents of the channel.html file should be just a single line:
+            The channel file should be set to be cached for as long as possible. When serving this file, you should send valid Expires headers with a long expiration period. This will ensure the channel file is cached by the browser and not reloaded with each page refresh. 
+
+            https://developers.facebook.com/docs/javascript/gettingstarted/#loading
+            */ 
+            channelUrl: '//path_to_channel_file/channel.html',
+        }); 
+    
+    // When you click the fbModalButton
+    $('#fbModalButton').click(function(){
+        // Check if logged into FB
+        FB.getLoginStatus(function(response) {
+            // If logged into FB
+            if (response.status == 'connected') {
+                console.log('Connected to FB');
+                FB.api('/me', function(response) {
+                    $("#FB_details").html("You are logged into Facebook as:  " + response.name );
+                });
+                // get a list of pages "me" is the admin of
+                FB.api('me/accounts', function(response){
+                     if (!response || response.error) {
+                        console.log('Error occured' + response.error.message);
+                    } else {
+                        var listItems;
+                        for (var i = 0; i < response.data.length; i++)
+                        {
+                            var id_token = response.data[i].id + "_" + response.data[i].access_token;
+                            response.data[i].id;
+                            listItems += "<option value='"+id_token+"'>"+response.data[i].name+"</option>";
+                        }
+                        // Add this list to the drop down list #pageList
+                        $("#pageList").html(listItems);
+                    }       
+                });
+                // Open the modal
+                $('#fbModal').modal();
+
+            } 
+            // If logged in but not authorised with this app
+            else if (response.status == 'not_authorized') {
+                console.log('app not authorised');
+                FB.login(function(response) {
+                    if (response.authResponse) {
+                        access_token =   FB.getAuthResponse()['accessToken'];
+                        console.log('Welcome!  Fetching your information.... ');
+                        FB.api('/me', function(response) {
+                            $("#FB_details").html("You are logged into Facebook as: " + response.name + ".");
+                            FB.api('me/accounts', function(response){
+                                if (!response || response.error) {
+                                    console.log('Error occured' + response.error.message);
+                                } else {
+                                    var listItems;
+                                    for (var i = 0; i < response.data.length; i++)
+                                    {
+                                        // set the value of the list items to be the page id and the page access token concatenated together with an "_" between them
+                                        var id_token = response.data[i].id + "_" + response.data[i].access_token;
+                                        response.data[i].id;
+                                        listItems += "<option value='"+id_token+"'>"+response.data[i].name+"</option>";
+                                    }
+                                    $("#pageList").html(listItems);
+                                }       
+                            });
+                            $('#fbModal').modal();
+                        });
+                    } else {
+                     console.log('User cancelled login or did not fully authorize.');
+                    }
+                },
+                // get the necessarry priveliges 
+                {scope: 'manage_pages, publish_stream'});
+            } 
+            // Else the user isn't logged into facebook
+            else {
+                console.log('not logged into facebook');
+                FB.login(function(response) {
+                    if (response.authResponse) {
+                        access_token =   FB.getAuthResponse()['accessToken'];
+                        console.log('Welcome!  Fetching your information.... ');
+                        FB.api('/me', function(response) {
+                            $("#FB_details").html("You are logged into Facebook as: " + response.name + ".");
+                            FB.api('me/accounts', function(response){
+                                if (!response || response.error) {
+                                    console.log('Error occured' + response.error.message);
+                                } else {
+                                    var listItems;
+                                    for (var i = 0; i < response.data.length; i++)
+                                    {
+                                        // set the value of the list items to be the page id and the page access token concatenated together with an "_" between them
+                                        var id_token = response.data[i].id + "_" + response.data[i].access_token;
+                                        response.data[i].id;
+                                        listItems += "<option value='"+id_token+"'>"+response.data[i].name+"</option>";
+                                    }
+                                    $("#pageList").html(listItems);
+                                }       
+                            });
+                            $('#fbModal').modal();
+                        });
+                    } else {
+                        console.log('User cancelled login or did not fully authorize.');
+                    }
+                },
+                // get the necessarry priveliges 
+                {scope: 'manage_pages, publish_stream'});
+            }
+        });
+    });
+
+    $('#fbsend').click(function(){ 
+
+        var imgSrc = $('#imageToSend').attr('src'); // The url of the file to be uploaded
+
+        var id_token = $("#pageList").val();
+        var id_token_array = id_token.split("_"); // Split the id and token
+        var message = $('#message').val()
+
+        var page_id = id_token_array[0];
+        var page_access_token = id_token_array[1];
+
+        FB.api('/' + page_id + '/photos', 'post', {
+            access_token: page_access_token,
+            message: message,
+            url: imgSrc       
+        }, function(response){
+
+            if (!response || response.error) {
+                console.log('Error occured' + response.error.message);
+            } else {
+                console.log('Post ID: ' + response.id);
+            }
+
+            });
+       });
+
+    });
+});
+</script>
